@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-# Initializations
 current_displacement = 0
 current_acceleration = 0
 # acceleration_dict holds the value of acceleration at different time steps.
@@ -20,7 +19,6 @@ acceleration_dict = {
 }
 
 true_values = []
-
 file = open("shipdata.csv")
 csvreader = csv.reader(file)
 for row in csvreader:
@@ -36,10 +34,8 @@ values = values[::100]
 # 3rd argument = how many values
 latNoise = np.random.normal(0, 0.03, len(values))
 lonNoise = np.random.normal(0, 0.01, len(values))
-
 values[:, 0] = latNoise + values[:, 0]
 values[:, 1] = lonNoise + values[:, 1]
-
 
 # initialization
 x_k = np.asarray([55, 11])  # first estimate. elem 0 = lat, elem 1 = lon
@@ -54,6 +50,7 @@ H = np.asarray([[1, 0], [0, 1]])  # Observation matrix. We want every state from
 P = np.asarray([[0, 0], [0, 0]])  # Error matrix.
 
 estimation = []
+
 
 for k_loop in range(len(values)):
     # z_k is the measurement at every step
