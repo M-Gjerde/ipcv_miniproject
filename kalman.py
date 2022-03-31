@@ -72,14 +72,15 @@ for row in csvreader:
 true_values = np.array(true_values)
 values = np.array(true_values)
 values = values[:, 0:2]
-values = values[::300]
+nth = 10
+values = values[::nth]
 
 # Gaussian/Normal noise
 # 1st argument = mean
 # 2nd argument = standard deviation
 # 3rd argument = how many values
-latNoise = np.random.normal(0, 0.08, len(values))
-lonNoise = np.random.normal(0, 0.03, len(values))
+latNoise = np.random.normal(0, 0.05, len(values))
+lonNoise = np.random.normal(0, 0.02, len(values))
 values[:, 0] = latNoise + values[:, 0]
 values[:, 1] = lonNoise + values[:, 1]
 
@@ -114,7 +115,6 @@ plt.xlabel('Latitude')
 plt.ylabel('Longitude')
 
 axs[0].plot(predictions[:, 0], predictions[:, 1], c="r", label="Predicted values")  # s=10, alpha=0.9, )
-# axs[0].scatter(measurements[:, 0], measurements[:, 1], c="b", s=10, alpha=0.3, label="Measured value")
 
 axs[0].set_xlim([54.5, 56.7])
 axs[0].set_ylim([11, 18])
@@ -122,7 +122,7 @@ axs[0].set_ylim([11, 18])
 axs[0].legend()
 axs[0].grid(True)
 
-axs[1].plot(measurements[:, 0], measurements[:, 1], c="b", label="Measured values")  # , s=10, alpha=1,)
+axs[1].plot(measurements[:, 0], measurements[:, 1], c="b", label="Measured values")
 
 axs[1].set_xlim([54.5, 56.7])
 axs[1].set_ylim([11, 18])
@@ -140,5 +140,23 @@ axs[2].grid(True)
 
 # ## CALCULATE ERRORS BETWEEN PREDICTED AND MEASURED COMPARED TO TRUE VALUES
 
+true_values = true_values[:, 0:2]
+true_values = true_values[::nth]
+
+predictError = (np.square(true_values - predictions)).mean(axis=0)
+measurementError = (np.square(true_values - measurements)).mean(axis=0)
+
+#predictError = true_values - predictions
+#measurementError = true_values - measurements
+
+fig2, axs2 = plt.subplots(1)
+series = np.linspace(0, len(predictError), len(predictError))
+
+categories = ["MSE prediction", "MSE measurement"]
+axs2.bar(categories, [predictError[0], measurementError[0]])  # s=10, alpha=0.9, )
+
+#axs2[0].set_ylim([-0.15, 0.15])
+
+axs2.legend()
 
 plt.show()
