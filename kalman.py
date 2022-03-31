@@ -6,6 +6,12 @@ from numpy.random import randn
 import matplotlib.pyplot as plt
 import csv
 
+"""
+Based on paper:
+https://arxiv.org/ftp/arxiv/papers/1204/1204.0375.pdf
+Code is also from there but adapted to our AIS data.
+"""
+
 
 def gauss_pdf(X, M, S):
     if M.shape[1] == 1:
@@ -43,10 +49,10 @@ def kf_update(X, P, Y, H, R):
 
 
 # time step of mobile movement
-dt = 1
+dt = 0.1
 # Initialization of state matrices
-X = np.array([[50.0], [0.0], [9.0], [0.0]])
-P = np.diag((0.01, 0.01, 0.01, 0.01))
+X = np.array([[0.0], [0.0], [0.0], [0.0]])
+P = np.diag((0.02, 0.01, 0.01, 0.01))
 A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
 Q = np.eye(X.shape[0])
 B = np.eye(X.shape[0])
@@ -66,24 +72,31 @@ for row in csvreader:
 true_values = np.array(true_values)
 values = np.array(true_values)
 values = values[:, 0:2]
-values = values[::100]
+values = values[::300]
 
 # Gaussian/Normal noise
 # 1st argument = mean
 # 2nd argument = standard deviation
 # 3rd argument = how many values
-latNoise = np.random.normal(0, 0.03, len(values))
-lonNoise = np.random.normal(0, 0.01, len(values))
+latNoise = np.random.normal(0, 0.08, len(values))
+lonNoise = np.random.normal(0, 0.03, len(values))
 values[:, 0] = latNoise + values[:, 0]
 values[:, 1] = lonNoise + values[:, 1]
 
 predictions = []
 measurements = []
 # Number of iterations in Kalman Filter
-N_iter = 50
 # Applying the Kalman Filter
 fig2 = plt.figure(2)
-for i in np.arange(0, N_iter):
+
+# ## Use 10 points to upate the initial state matrices.
+for x in range(10):
+    Y = np.array([[true_values[x, 0], true_values[x, 1]]])
+    (X, P) = kf_predict(X, P, A, Q, B, U)
+    (X, P, K, IM, IS, LH) = kf_update(X, P, Y, H, R)
+
+# ## RUN KALMAN FILTER ON INPUT DATA
+for i in np.arange(0, len(values)):
     Y = np.array([[values[i, 0], values[i, 1]]])
     (X, P) = kf_predict(X, P, A, Q, B, U)
     (X, P, K, IM, IS, LH) = kf_update(X, P, Y, H, R)
@@ -91,22 +104,41 @@ for i in np.arange(0, N_iter):
     predictions.append((X[0, 0], X[0, 1]))
     measurements.append((Y[0, 0], Y[0, 1]))
 
+# ### MATPLOTLIB COMMANDS
 predictions = np.array(predictions)
 measurements = np.array(measurements)
 
-fig, ax = plt.subplots()
-
+fig, axs = plt.subplots(3)
 
 plt.xlabel('Latitude')
 plt.ylabel('Longitude')
 
-plt.scatter(predictions[:,0], predictions[:,1], c="r", s=10, alpha=0.5, label="Prediction")
-plt.scatter(measurements[:,0], measurements[:,1], c="b", s=10, alpha=0.5, label="Measured value")
+axs[0].plot(predictions[:, 0], predictions[:, 1], c="r", label="Predicted values")  # s=10, alpha=0.9, )
+# axs[0].scatter(measurements[:, 0], measurements[:, 1], c="b", s=10, alpha=0.3, label="Measured value")
 
-plt.xlim([53, 58])
-plt.ylim([11, 18])
+axs[0].set_xlim([54.5, 56.7])
+axs[0].set_ylim([11, 18])
 
-ax.legend()
-ax.grid(True)
+axs[0].legend()
+axs[0].grid(True)
+
+axs[1].plot(measurements[:, 0], measurements[:, 1], c="b", label="Measured values")  # , s=10, alpha=1,)
+
+axs[1].set_xlim([54.5, 56.7])
+axs[1].set_ylim([11, 18])
+
+axs[1].legend()
+axs[1].grid(True)
+
+axs[2].scatter(true_values[:, 0], true_values[:, 1], c="b", s=10, alpha=1, label="True values")
+
+axs[2].set_xlim([54.5, 56.7])
+axs[2].set_ylim([11, 18])
+
+axs[2].legend()
+axs[2].grid(True)
+
+# ## CALCULATE ERRORS BETWEEN PREDICTED AND MEASURED COMPARED TO TRUE VALUES
+
 
 plt.show()
