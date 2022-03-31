@@ -5,6 +5,8 @@ import numpy as np
 from numpy.random import randn
 import matplotlib.pyplot as plt
 import csv
+import cartopy.crs as crs
+import cartopy.feature as feat
 
 """
 Based on paper:
@@ -130,6 +132,7 @@ axs[1].set_ylim([11, 18])
 axs[1].legend()
 axs[1].grid(True)
 
+
 axs[2].scatter(true_values[:, 0], true_values[:, 1], c="b", s=10, alpha=1, label="True values")
 
 axs[2].set_xlim([54.5, 56.7])
@@ -143,20 +146,40 @@ axs[2].grid(True)
 true_values = true_values[:, 0:2]
 true_values = true_values[::nth]
 
-predictError = (np.square(true_values - predictions)).mean(axis=0)
-measurementError = (np.square(true_values - measurements)).mean(axis=0)
+predictError = (np.square(true_values[:,0:1] - predictions[:,0:1])).mean(axis=0)
+measurementError = (np.square(true_values[:,0:1] - measurements[:,0:1])).mean(axis=0)
 
 #predictError = true_values - predictions
 #measurementError = true_values - measurements
 
 fig2, axs2 = plt.subplots(1)
 series = np.linspace(0, len(predictError), len(predictError))
-
+axs2.set_ylabel("Latitude")
 categories = ["MSE prediction", "MSE measurement"]
-axs2.bar(categories, [predictError[0], measurementError[0]])  # s=10, alpha=0.9, )
+axs2.bar(categories, [predictError[0], measurementError[0]], color="red")  # s=10, alpha=0.9, )
+
+predictError = (np.square(true_values[:,1:2] - predictions[:,1:2])).mean(axis=0)
+measurementError = (np.square(true_values[:,1:2] - measurements[:,1:2])).mean(axis=0)
+
+fig4, axs4 = plt.subplots(1)
+series = np.linspace(0, len(predictError), len(predictError))
+axs4.set_ylabel("Longitude")
+categories = ["MSE prediction", "MSE measurement"]
+axs4.bar(categories, [predictError[0], measurementError[0]], color="red")  # s=10, alpha=0.9, )
 
 #axs2[0].set_ylim([-0.15, 0.15])
 
-axs2.legend()
+axs4.legend()
+
+
+fig3 = plt.figure(figsize=(8, 5))
+ax = plt.axes(projection=crs.Mollweide())
+
+ax.set_global()
+ax.add_feature(feat.LAND, zorder=100, edgecolor='k', alpha=0.8)
+ax.coastlines()
+
+ax.scatter(true_values[:, 1], true_values[:, 0], c="b",transform=crs.PlateCarree(), s=2, alpha=1, label="True values")
+
 
 plt.show()
