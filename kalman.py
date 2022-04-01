@@ -35,17 +35,21 @@ def gauss_pdf(X, M, S):
 
 
 def kf_predict(X, P, A, Q, B, U):
+    # Predict the next state
     X = dot(A, X)
+    # Predict the a priori estimate: covariance matrix
     P = dot(A, dot(P, A.T)) + Q
     return (X, P)
 
 
 def kf_update(X, P, Y, H, R):
-    IS = R + dot(H, dot(P, H.T))
-    K = dot(P, dot(H.T, np.linalg.inv(IS)))
+    # Update the kalman Gain
+    K = dot(P, dot(H.T, np.linalg.inv(R + dot(H, dot(P, H.T)))))
+    # Use the updated kalman gain to calculate new X
     X = X + dot(K, (Y - dot(H, X)))
-    P = P - dot(K, dot(IS, K.T))
-    return X, P, K, IS
+    # update the a posteriori estimate error covariance
+    P = dot(np.identity(2) - dot(K, H), P)
+    return X, P, K
 
 
 # time step of mobile movement
@@ -94,13 +98,13 @@ fig2 = plt.figure(2)
 for x in range(10):
     Y = np.array([[true_values[x, 0], true_values[x, 1]]])
     (X, P) = kf_predict(X, P, A, Q, B, U)
-    (X, P, K, IS) = kf_update(X, P, Y, H, R)
+    (X, P, K) = kf_update(X, P, Y, H, R)
 
 # ## RUN KALMAN FILTER ON INPUT DATA
 for i in np.arange(0, len(values)):
     Y = np.array([[values[i, 0], values[i, 1]]])
     (X, P) = kf_predict(X, P, A, Q, B, U)
-    (X, P, K, IS) = kf_update(X, P, Y, H, R)
+    (X, P, K) = kf_update(X, P, Y, H, R)
     # Y = np.array([[X[0, 0] + values[i, 0], X[1, 0] + values[i, 1]]])
     predictions.append((X[0, 0], X[0, 1]))
     measurements.append((Y[0, 0], Y[0, 1]))
