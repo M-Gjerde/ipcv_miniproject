@@ -35,34 +35,32 @@ def gauss_pdf(X, M, S):
 
 
 def kf_predict(X, P, A, Q, B, U):
-    X = dot(A, X) + dot(B, U)
+    X = dot(A, X)
     P = dot(A, dot(P, A.T)) + Q
     return (X, P)
 
 
 def kf_update(X, P, Y, H, R):
-    IM = dot(H, X)
     IS = R + dot(H, dot(P, H.T))
     K = dot(P, dot(H.T, np.linalg.inv(IS)))
-    X = X + dot(K, (Y - IM))
+    X = X + dot(K, (Y - dot(H, X)))
     P = P - dot(K, dot(IS, K.T))
-    LH = gauss_pdf(Y, IM, IS)
-    return X, P, K, IM, IS, LH
+    return X, P, K, IS
 
 
 # time step of mobile movement
-dt = 0.1
+dt = 1
 # Initialization of state matrices
-X = np.array([[0.0], [0.0], [0.0], [0.0]])
-P = np.diag((0.02, 0.01, 0.01, 0.01))
-A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
+X = np.array([[0.0], [0.0]])
+P = np.diag((0.01, 0.00))
+A = np.array([[1, 0], [0, 1]])
 Q = np.eye(X.shape[0])
 B = np.eye(X.shape[0])
 U = np.zeros((X.shape[0], 1))
 
 # Measurement matrices
 Y = np.array([[X[0, 0] + abs(randn(1)[0])], [X[1, 0] + abs(randn(1)[0])]])
-H = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
+H = np.array([[1, 0], [0, 1]])
 R = np.eye(Y.shape[0])
 
 true_values = []
@@ -96,13 +94,13 @@ fig2 = plt.figure(2)
 for x in range(10):
     Y = np.array([[true_values[x, 0], true_values[x, 1]]])
     (X, P) = kf_predict(X, P, A, Q, B, U)
-    (X, P, K, IM, IS, LH) = kf_update(X, P, Y, H, R)
+    (X, P, K, IS) = kf_update(X, P, Y, H, R)
 
 # ## RUN KALMAN FILTER ON INPUT DATA
 for i in np.arange(0, len(values)):
     Y = np.array([[values[i, 0], values[i, 1]]])
     (X, P) = kf_predict(X, P, A, Q, B, U)
-    (X, P, K, IM, IS, LH) = kf_update(X, P, Y, H, R)
+    (X, P, K, IS) = kf_update(X, P, Y, H, R)
     # Y = np.array([[X[0, 0] + values[i, 0], X[1, 0] + values[i, 1]]])
     predictions.append((X[0, 0], X[0, 1]))
     measurements.append((Y[0, 0], Y[0, 1]))
@@ -158,8 +156,10 @@ axs2.set_ylabel("Latitude")
 categories = ["MSE prediction", "MSE measurement"]
 axs2.bar(categories, [predictError[0], measurementError[0]], color="red")  # s=10, alpha=0.9, )
 
+print([predictError[0], measurementError[0]])
 predictError = (np.square(true_values[:,1:2] - predictions[:,1:2])).mean(axis=0)
 measurementError = (np.square(true_values[:,1:2] - measurements[:,1:2])).mean(axis=0)
+print([predictError[0], measurementError[0]])
 
 fig4, axs4 = plt.subplots(1)
 series = np.linspace(0, len(predictError), len(predictError))
@@ -181,5 +181,23 @@ ax.coastlines()
 
 ax.scatter(true_values[:, 1], true_values[:, 0], c="b",transform=crs.PlateCarree(), s=2, alpha=1, label="True values")
 
+fig4 = plt.figure(figsize=(8, 5))
+ax = plt.axes(projection=crs.Mollweide())
+
+ax.set_global()
+ax.add_feature(feat.LAND, zorder=100, edgecolor='k', alpha=0.8)
+ax.coastlines()
+
+ax.scatter(values[:, 1], values[:, 0], c="b",transform=crs.PlateCarree(), s=2, alpha=1, label="True values")
+
+
+fig5 = plt.figure(figsize=(8, 5))
+ax = plt.axes(projection=crs.Mollweide())
+
+ax.set_global()
+ax.add_feature(feat.LAND, zorder=100, edgecolor='k', alpha=0.8)
+ax.coastlines()
+
+ax.scatter(predictions[:, 1], predictions[:, 0], c="r",transform=crs.PlateCarree(), s=2, alpha=1, label="True values")
 
 plt.show()
